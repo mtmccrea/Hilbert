@@ -45,15 +45,72 @@ freq = dur.reciprocal;
 		size: size);
 }.loadToFloatArray(overSample * dur, s, {
 	|arr|
-	arr.shape.postln;
 	defer {
 		arr = arr.clump(2).flop; // de-interleave
-		arr.shape.postln;
 		arr = arr.collect(_.copyRange(start, start+size));
 		arr.plot("[real, imag]; HilbertW; Cosine input", minval: -1, maxval: 1);
 	}
 }
 );
+)
+
+
+
+/*
+			TEST PDN : HilbertPDN.ar (FOS), HilbertPDN.ar1 (SOS)
+*/
+
+// TODO:
+// it appears the sin/cos parts are reversed or the imaginary part has its phase inverted
+// extract coef calculation to class method?
+// offer just FOS or SOS version?
+// separate into Re and Im versions like the other 2 implementations?
+
+(
+fork {
+	var dur, freq, period;
+	var overSample, start, plotdur, plotcycles;
+
+	// freq = s.sampleRate/256;
+	// freq = 4000;
+	freq = 20;
+	period = freq.reciprocal;
+	overSample = 5; // how many cycles to capture
+	start = (4 * period * s.sampleRate).asInt -1;  // offset - to sync cycle, start of plot
+	dur = period * overSample;  // duration of capture, in seconds
+	plotcycles = 1;
+	plotdur = (period * s.sampleRate).asInt * plotcycles;
+
+	{ // [real,imag]
+		HilbertPDN.ar(
+			SinOsc.ar(freq, pi/2), // cosine test, one cycle over fftbuffer size
+		);
+	}.loadToFloatArray(dur, s, {
+		|arr|
+		defer {
+			arr = arr.clump(2).flop; // de-interleave
+			arr = arr.collect(_.copyRange(start, start+plotdur));
+			arr.plot(format("[real, imag]; HilbertPDN.ar (FOS); Cosine input % Hz", freq), minval: -1, maxval: 1);
+		}
+	}
+	);
+
+	0.5.wait;
+
+	{ // [real,imag]
+		HilbertPDN.ar1(
+			SinOsc.ar(freq, pi/2), // cosine test, one cycle over fftbuffer size
+		);
+	}.loadToFloatArray(dur, s, {
+		|arr|
+		defer {
+			arr = arr.clump(2).flop; // de-interleave
+			arr = arr.collect(_.copyRange(start, start+plotdur));
+			arr.plot(format("[real, imag]; HilbertPDN.ar1 (SOS); Cosine input % Hz", freq), minval: -1, maxval: 1);
+		}
+	}
+	);
+}
 )
 
 
