@@ -55,30 +55,61 @@ freq = dur.reciprocal;
 )
 
 
+// quick benchmark - late 2016 Macbook Pro
+s.options.numWireBufs_(64*16); // required for 50 instances of HilbertW (pv_brickwall implementation)
+s.reboot;
+~bus = CtkAudio.play(2);
+s.scope(4, ~bus.busnum);
+(
+d = CtkProtoNotes(
+	SynthDef(\hilbertW, {arg outbus;
+		var num = 50;
+		Out.ar(outbus, Mix.ar(num.collect{HilbertW.ar(SinOsc.ar, 2048, num.reciprocal)}))
+	}),
+
+	SynthDef(\hilbertWRe, {arg outbus;
+		var num = 50;
+		Out.ar(outbus, Mix.ar(num.collect{HilbertWRe.ar(SinOsc.ar, 2048, num.reciprocal)}))
+	}),
+
+	SynthDef(\hilbertWIm, {arg outbus;
+		var num = 50;
+		Out.ar(outbus, Mix.ar(num.collect{HilbertWIm.ar(SinOsc.ar, 2048, num.reciprocal)}))
+	})
+)
+)
+
+// *ar, DelayN & PV_brickwall (size: 2048): 50 instances: avg 9.2%, pk 17.5%, avg fluctuates quite a bit
+// note currently uses the DelayN version for the real part...
+d[\hilbertW].note().outbus_(~bus.busnum).play
+// test individual Re and Im
+d[\hilbertWRe].note().outbus_(~bus.busnum).play
+d[\hilbertWIm].note().outbus_(~bus.busnum).play
+
 
 /*
-			TEST PDN : HilbertPDN.ar (FOS), HilbertPDN.ar1 (SOS)
+			TEST PDN : HilbertPDN.ar (FOS), HilbertPDN.ar1 (SOS), HilbertPDN.ar2 (SOS, refactored)
 */
 
 // TODO:
 // it appears the sin/cos parts are reversed or the imaginary part has its phase inverted
-// extract coef calculation to class method?
-// offer just FOS or SOS version?
-// separate into Re and Im versions like the other 2 implementations?
-
+// magnitude response not so great at high freqs... especially the FOS version
 (
 fork {
 	var dur, freq, period;
-	var overSample, start, plotdur, plotcycles;
+	var overSample, plotstartcycle, start, plotdur, plotcycles;
 
-	// freq = s.sampleRate/256;
+	// freq = s.sampleRate/2; // nyquist
+	freq = s.sampleRate/4; // half nyquist
+	freq = s.sampleRate/3;
+	freq = s.sampleRate/5;
 	// freq = 4000;
-	freq = 20;
 	period = freq.reciprocal;
-	overSample = 5; // how many cycles to capture
-	start = (4 * period * s.sampleRate).asInt -1;  // offset - to sync cycle, start of plot
+	overSample = 50; // how many cycles to capture
+	plotstartcycle = 1;
+	plotcycles = 25;
+	start = (plotstartcycle * period * s.sampleRate).asInt -1;  // offset - to sync cycle, start of plot
 	dur = period * overSample;  // duration of capture, in seconds
-	plotcycles = 1;
 	plotdur = (period * s.sampleRate).asInt * plotcycles;
 
 	{ // [real,imag]
@@ -110,8 +141,38 @@ fork {
 		}
 	}
 	);
+
+	0.5.wait;
+
+	{ // [real,imag]
+		HilbertPDN.ar2(
+			SinOsc.ar(freq, pi/2), // cosine test, one cycle over fftbuffer size
+		);
+	}.loadToFloatArray(dur, s, {
+		|arr|
+		defer {
+			arr = arr.clump(2).flop; // de-interleave
+			arr = arr.collect(_.copyRange(start, start+plotdur));
+			arr.plot(format("[real, imag]; HilbertPDN.ar2 (SOS-refactored); Cosine input % Hz", freq), minval: -1, maxval: 1);
+		}
+		}
+	);
 }
 )
+
+// quick benchmark - late 2016 Macbook Pro
+~bus = CtkAudio.play(2);
+s.scope(4, ~bus.busnum)
+// *ar, FOS: 50 instances: avg 14%, pk 19.5%
+{var num = 50; Out.ar(~bus.busnum, Mix.ar(num.collect{HilbertPDN.ar(SinOsc.ar, num.reciprocal)}))}.play
+// *ar1, SOS: 50 instances: avg 11%, pk 14.7%
+{var num = 50; Out.ar(~bus.busnum, Mix.ar(num.collect{HilbertPDN.ar1(SinOsc.ar, num.reciprocal)}))}.play
+// *ar2, SOS, refactored: 50 instances: avg 11%, pk 14.7%
+{var num = 50; Out.ar(~bus.busnum, Mix.ar(num.collect{HilbertPDN.ar2(SinOsc.ar, num.reciprocal)}))}.play
+
+// test individual Re and Im
+{var num = 50; Out.ar(~bus.busnum, Mix.ar(num.collect{HilbertPDNRe.ar(SinOsc.ar, num.reciprocal)}))}.play
+{var num = 50; Out.ar(~bus.busnum, Mix.ar(num.collect{HilbertPDNIm.ar(SinOsc.ar, num.reciprocal)}))}.play
 
 
 
@@ -215,40 +276,40 @@ fork {
 
 
 
-/*   SCRATCH    */
+// quick benchmark - late 2016 Macbook Pro
+s.options.numWireBufs_(64); // required for 50 instances of HilbertW (pv_brickwall implementation)
+s.reboot;
+~bus = CtkAudio.play(2);
+s.scope(4, ~bus.busnum);
+
 (
 p = CtkProtoNotes(
-
-	// WEAVERs
-
-	SynthDef(\weav, {arg outbus=2, freq=2000;
-		var sig, h;
-		sig = SinOsc.ar(freq, pi/2);  // cosine test
-		h = HilbertW.ar(sig, size: 2048);
-		Out.ar(outbus, h);
+	SynthDef(\hilbertH, {arg outbus;
+		var num = 50;
+		Out.ar(outbus, Mix.ar(num.collect{HilbertH.ar(SinOsc.ar, 2048, num.reciprocal)}))
 	}),
 
-	SynthDef(\weavRe, {arg outbus=2, freq=2000;
-		var sig, h;
-		sig = SinOsc.ar(freq, pi/2);  // cosine test
-		h = HilbertWRe.ar(sig, size: 2048);
-		Out.ar(outbus, h);
+	SynthDef(\hilbertHRe_del, {arg outbus;
+		var num = 50;
+		Out.ar(outbus, Mix.ar(num.collect{HilbertHRe.ar(SinOsc.ar, 2048, num.reciprocal)}))
 	}),
-	SynthDef(\weavIm, {arg outbus=2, freq=2000;
-		var sig, h;
-		sig = SinOsc.ar(freq, pi/2);  // cosine test
-		h = HilbertWIm.ar(sig, size: 2048);
-		Out.ar(outbus, h);
+
+	SynthDef(\hilbertHRe_conv, {arg outbus;
+		var num = 50;
+		Out.ar(outbus, Mix.ar(num.collect{HilbertHRe.arConv(SinOsc.ar, 2048, num.reciprocal)}))
+	}),
+
+	SynthDef(\hilbertHIm, {arg outbus;
+		var num = 50;
+		Out.ar(outbus, Mix.ar(num.collect{HilbertHIm.ar(SinOsc.ar, 2048, num.reciprocal)}))
 	})
-
 )
 )
 
-// play to this bus to observe
-~out = CtkAudio.play(2);
-
-s.scope(2, ~out.busnum)
-
-// weaver
-x = p[\weav].note.outbus_(~out).play
-
+// *ar, DelayL & Convolution2 (size: 2048) : 50 instances: avg 4.7%, pk 17.6%, disparity is LARGE
+// note currently uses the DelayL version for the real part...
+p[\hilbertH].note().outbus_(~bus.busnum).play
+// test individual Re and Im
+p[\hilbertHRe_del].note().outbus_(~bus.busnum).play
+p[\hilbertHRe_conv].note().outbus_(~bus.busnum).play
+p[\hilbertHIm].note().outbus_(~bus.busnum).play
