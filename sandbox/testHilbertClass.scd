@@ -277,8 +277,6 @@ fork {
 
 
 // quick benchmark - late 2016 Macbook Pro
-s.options.numWireBufs_(64); // required for 50 instances of HilbertW (pv_brickwall implementation)
-s.reboot;
 ~bus = CtkAudio.play(2);
 s.scope(4, ~bus.busnum);
 
