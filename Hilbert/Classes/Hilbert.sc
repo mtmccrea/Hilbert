@@ -224,7 +224,7 @@ HilbertHIm {
 
 
 /*
-Hilbert transform - Phase Delay Network (PDN), IIR
+Hilbert transform - Phase Difference Network (PDN), IIR
 a 12 pole (6 per side) Hilbert IIR filter
 based on Sean Costello and Bernie Hutchins
 created by jl anderson - 7 jan 2001
@@ -310,7 +310,7 @@ HilbertPDN {
 		^( mul * ( add + [ hilbertCos, hilbertSin ] ) )
 	}
 
-	// refactored form of *ar1
+	// refactored form of *ar1 (SOS)
 	*ar2 { |in, mul = 1.0, add = 0.0|
 		^[
 			HilbertPDNRe.ar(in, mul, add),

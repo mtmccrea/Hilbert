@@ -1,6 +1,10 @@
+// Remember to boot!
+s.boot;
+
 /*
 		TEST Weaver : HilbertWRe, HilbertWIm, HilbertW
 */
+
 
 (
 var size, dur, freq;
@@ -86,6 +90,16 @@ d[\hilbertW].note().outbus_(~bus.busnum).play
 d[\hilbertWRe].note().outbus_(~bus.busnum).play
 d[\hilbertWIm].note().outbus_(~bus.busnum).play
 
+// TEST 2: Hilbert-atk quark, sc 3.9, 96k:
+// *ar, DelayN & PV_brickwall (size: 2048): 50 instances: avg 13-15%, pk 71%, fluctuates quite a bit
+// TEST 3: Hilbert original port as above, sc 3.9, 96k:
+// same as test 2
+
+// TEST 4: Hilbert-atk quark, sc 3.9, 44.1k:
+// *ar, DelayN & PV_brickwall (size: 2048): 50 instances: avg 9-10%, pk 35%, fluctuates quite a bit
+// TEST 5: Hilbert original port as above, sc 3.9, 44.1k:
+// *ar, DelayN & PV_brickwall (size: 2048): 50 instances: avg 6-7%, pk 33%, fluctuates quite a bit
+
 
 /*
 			TEST PDN : HilbertPDN.ar (FOS), HilbertPDN.ar1 (SOS), HilbertPDN.ar2 (SOS, refactored)
@@ -99,10 +113,10 @@ fork {
 	var dur, freq, period;
 	var overSample, plotstartcycle, start, plotdur, plotcycles;
 
-	// freq = s.sampleRate/2; // nyquist
-	freq = s.sampleRate/4; // half nyquist
-	freq = s.sampleRate/3;
-	freq = s.sampleRate/5;
+	freq = s.sampleRate/2; // nyquist
+	// freq = s.sampleRate/4; // half nyquist
+	// freq = s.sampleRate/3;
+	// freq = s.sampleRate/5;
 	// freq = 4000;
 	period = freq.reciprocal;
 	overSample = 50; // how many cycles to capture
@@ -164,6 +178,7 @@ fork {
 ~bus = CtkAudio.play(2);
 s.scope(4, ~bus.busnum)
 // *ar, FOS: 50 instances: avg 14%, pk 19.5%
+
 {var num = 50; Out.ar(~bus.busnum, Mix.ar(num.collect{HilbertPDN.ar(SinOsc.ar, num.reciprocal)}))}.play
 // *ar1, SOS: 50 instances: avg 11%, pk 14.7%
 {var num = 50; Out.ar(~bus.busnum, Mix.ar(num.collect{HilbertPDN.ar1(SinOsc.ar, num.reciprocal)}))}.play
@@ -174,9 +189,11 @@ s.scope(4, ~bus.busnum)
 {var num = 50; Out.ar(~bus.busnum, Mix.ar(num.collect{HilbertPDNRe.ar(SinOsc.ar, num.reciprocal)}))}.play
 {var num = 50; Out.ar(~bus.busnum, Mix.ar(num.collect{HilbertPDNIm.ar(SinOsc.ar, num.reciprocal)}))}.play
 
+// TEST 2 (sc 3.9, Hilbert-atk, 96k): FOS: 50 instances: avg 17-18%, pk 49%
+// TEST 3 (sc 3.9, original port, 96k): FOS: 50 instances: avg 22-24%, pk 64%
 
-
-
+// TEST 4: Hilbert-atk quark, sc 3.9, 44.1k: FOS: 50 instances: avg 11-12%, pk 25%
+// TEST 5: Hilbert-original port, sc 3.9, 44.1k: FOS: 50 instances: avg 9-11%, pk 29%
 
 /*
 		TEST Hartley : HilbertHRe, HilbertHIm, HilbertH
@@ -311,3 +328,9 @@ p[\hilbertH].note().outbus_(~bus.busnum).play
 p[\hilbertHRe_del].note().outbus_(~bus.busnum).play
 p[\hilbertHRe_conv].note().outbus_(~bus.busnum).play
 p[\hilbertHIm].note().outbus_(~bus.busnum).play
+
+// TEST 2: *ar, Hilbert-atk, 96k, DelayL & Convolution2 (size: 2048) : 50 instances: avg 8-9%, pk 66%, disparity is LARGE
+// TEST 3: *ar, Hilbert-original port, 96k, DelayL & Convolution2 (size: 2048) : 50 instances: avg 8-9%, pk 66%, disparity is LARGE
+
+// TEST 4: *ar, Hilbert-atk, 44.1k, DelayL & Convolution2 (size: 2048) : 50 instances: avg 4-5%, pk 14-17%, disparity is LARGE
+// TEST 5: *ar, Hilbert original port, 44.1k, DelayL & Convolution2 (size: 2048) : 50 instances: avg 3-4%, pk 31%, disparity is LARGE
